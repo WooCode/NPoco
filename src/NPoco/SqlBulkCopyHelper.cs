@@ -20,8 +20,7 @@ namespace NPoco
 
         public static void BulkInsert<T>(IDatabase db, IEnumerable<T> list, SqlBulkCopyOptions sqlBulkCopyOptions)
         {
-
-            using (var bulkCopy = new SqlBulkCopy(db.Connection, sqlBulkCopyOptions, SqlTransactionResolver(db.Transaction)))
+            using (var bulkCopy = new SqlBulkCopy(SqlConnectionResolver(db.Connection), sqlBulkCopyOptions, SqlTransactionResolver(db.Transaction)))
             {
                 var table = BuildBulkInsertDataTable(db, list, bulkCopy, sqlBulkCopyOptions);
                 bulkCopy.WriteToServer(table);
