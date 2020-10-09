@@ -18,6 +18,18 @@ namespace NPoco
             BulkInsert(db, list, SqlBulkCopyOptions.Default);
         }
 
+        public static void BulkInsert<T>(Microsoft.Data.SqlClient.SqlConnection sqlConnection,
+            Microsoft.Data.SqlClient.SqlTransaction sqlTransaction, IEnumerable<T> list,
+            Microsoft.Data.SqlClient.SqlBulkCopyOptions sqlBulkCopyOptions)
+        {
+            using (var bulkCopy = new Microsoft.Data.SqlClient.SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, sqlTransaction))
+            {
+                var db = new Database(sqlConnection);
+                var table = BuildBulkInsertDataTable(db, list, bulkCopy, sqlBulkCopyOptions);
+                bulkCopy.WriteToServer(table);
+            }
+        }
+
         public static void BulkInsert<T>(IDatabase db, IEnumerable<T> list, SqlBulkCopyOptions sqlBulkCopyOptions)
         {
             using (var bulkCopy = new SqlBulkCopy(SqlConnectionResolver(db.Connection), sqlBulkCopyOptions, SqlTransactionResolver(db.Transaction)))
@@ -37,7 +49,10 @@ namespace NPoco
         }
 #endif
 
-        private static DataTable BuildBulkInsertDataTable<T>(IDatabase db, IEnumerable<T> list, SqlBulkCopy bulkCopy, SqlBulkCopyOptions sqlBulkCopyOptions)
+        private static DataTable BuildBulkInsertDataTable<T>(IDatabase db,
+            IEnumerable<T> list,
+            Microsoft.Data.SqlClient.SqlBulkCopy bulkCopy,
+            Microsoft.Data.SqlClient.SqlBulkCopyOptions sqlBulkCopyOptions)
         {
             var pocoData = db.PocoDataFactory.ForType(typeof (T));
 
@@ -51,7 +66,7 @@ namespace NPoco
                 if (x.Value.ComputedColumn) return false;
                 if (x.Value.ColumnName.Equals(pocoData.TableInfo.PrimaryKey, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (sqlBulkCopyOptions == SqlBulkCopyOptions.KeepIdentity)
+                    if (sqlBulkCopyOptions == Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity)
                         return true;
 
                     return pocoData.TableInfo.AutoIncrement == false;
